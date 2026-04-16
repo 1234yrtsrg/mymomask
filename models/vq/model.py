@@ -7,7 +7,7 @@ from models.vq.residual_vq import ResidualVQ
 class RVQVAE(nn.Module):
     def __init__(self,
                  args,
-                 input_width=263,
+                 input_width=61,
                  nb_code=1024,
                  code_dim=512,
                  output_emb_width=512,
@@ -40,12 +40,12 @@ class RVQVAE(nn.Module):
         self.quantizer = ResidualVQ(**rvqvae_config)
 
     def preprocess(self, x):
-        # (bs, T, Jx3) -> (bs, Jx3, T)
+        # (bs, T, C) -> (bs, C, T)
         x = x.permute(0, 2, 1).float()
         return x
 
     def postprocess(self, x):
-        # (bs, Jx3, T) ->  (bs, T, Jx3)
+        # (bs, C, T) ->  (bs, T, C)
         x = x.permute(0, 2, 1)
         return x
 

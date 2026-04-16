@@ -143,8 +143,8 @@ class ResidualVQ(nn.Module):
             quantized, *rest = layer(residual, return_idx=True, temperature=sample_codebook_temp) #single quantizer
 
             # print(quantized.shape, residual.shape)
-            residual -= quantized.detach()
-            quantized_out += quantized
+            residual = residual - quantized.detach()
+            quantized_out = quantized_out + quantized
 
             embed_indices, loss, perplexity = rest
             all_indices.append(embed_indices)

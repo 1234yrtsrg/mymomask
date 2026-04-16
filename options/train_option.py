@@ -1,5 +1,6 @@
 from options.base_option import BaseOptions
 import argparse
+from utils.dataset_paths import configure_dataset_paths
 
 class TrainT2MOptions(BaseOptions):
     def initialize(self):
@@ -38,13 +39,16 @@ class TrainLenEstOptions():
         self.parser.add_argument('--name', type=str, default="test", help='Name of this trial')
         self.parser.add_argument("--gpu_id", type=int, default=-1, help='GPU id')
 
-        self.parser.add_argument('--dataset_name', type=str, default='t2m', help='Dataset Name')
+        self.parser.add_argument('--dataset_name', type=str, default='blendshape', help='Dataset identifier')
+        self.parser.add_argument('--data_root', type=str, default='./dataset/blendshape', help='Dataset root directory')
+        self.parser.add_argument('--motion_dir', type=str, default='', help='Directory containing motion numpy files')
+        self.parser.add_argument('--text_dir', type=str, default='', help='Directory containing paired text files')
         self.parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
 
         self.parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
 
-        self.parser.add_argument("--unit_length", type=int, default=4, help="Length of motion")
-        self.parser.add_argument("--max_text_len", type=int, default=20, help="Length of motion")
+        self.parser.add_argument("--unit_length", type=int, default=4, help="Temporal downsampling ratio")
+        self.parser.add_argument("--max_text_len", type=int, default=20, help="Maximum number of text tokens before adding special tokens")
 
         self.parser.add_argument('--max_epoch', type=int, default=300, help='Training iterations')
 
@@ -59,6 +63,7 @@ class TrainLenEstOptions():
 
     def parse(self):
         self.opt = self.parser.parse_args()
+        self.opt = configure_dataset_paths(self.opt)
         self.opt.is_train = True
         # args = vars(self.opt)
         return self.opt

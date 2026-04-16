@@ -5,7 +5,6 @@ from PIL import Image
 from utils import paramUtil
 import math
 import time
-import matplotlib.pyplot as plt
 # from scipy.ndimage import gaussian_filter
 
 
@@ -134,6 +133,8 @@ def compose_image(img_list, col, row, img_size):
 
 
 def plot_loss_curve(losses, save_path, intervals=500):
+    import matplotlib.pyplot as plt
+
     plt.figure(figsize=(10, 5))
     plt.title("Loss During Training")
     for key in losses.keys():

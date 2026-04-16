@@ -2,13 +2,23 @@ import torch.nn as nn
 from models.vq.resnet import Resnet1D
 
 
+def _make_activation(name):
+    if name == 'relu':
+        return nn.ReLU()
+    if name == 'silu':
+        return nn.SiLU()
+    if name == 'gelu':
+        return nn.GELU()
+    raise ValueError(f'Unsupported activation: {name}')
+
+
 class Encoder(nn.Module):
     def __init__(self,
-                 input_emb_width=3,
-                 output_emb_width=512,
+                 input_emb_width=61,
+                 output_emb_width=256,
                  down_t=2,
                  stride_t=2,
-                 width=512,
+                 width=256,
                  depth=3,
                  dilation_growth_rate=3,
                  activation='relu',
@@ -17,8 +27,9 @@ class Encoder(nn.Module):
 
         blocks = []
         filter_t, pad_t = stride_t * 2, stride_t // 2
+        act = _make_activation(activation)
         blocks.append(nn.Conv1d(input_emb_width, width, 3, 1, 1))
-        blocks.append(nn.ReLU())
+        blocks.append(act)
 
         for i in range(down_t):
             input_dim = width
@@ -36,20 +47,21 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self,
-                 input_emb_width=3,
-                 output_emb_width=512,
+                 input_emb_width=61,
+                 output_emb_width=256,
                  down_t=2,
                  stride_t=2,
-                 width=512,
+                 width=256,
                  depth=3,
                  dilation_growth_rate=3,
                  activation='relu',
                  norm=None):
         super().__init__()
         blocks = []
+        act = _make_activation(activation)
 
         blocks.append(nn.Conv1d(output_emb_width, width, 3, 1, 1))
-        blocks.append(nn.ReLU())
+        blocks.append(act)
         for i in range(down_t):
             out_dim = width
             block = nn.Sequential(
@@ -59,10 +71,11 @@ class Decoder(nn.Module):
             )
             blocks.append(block)
         blocks.append(nn.Conv1d(width, width, 3, 1, 1))
-        blocks.append(nn.ReLU())
-        blocks.append(nn.Conv1d(width, input_emb_width, 3, 1, 1))
+        blocks.append(act)
         self.model = nn.Sequential(*blocks)
+        self.output_proj = nn.Conv1d(width, input_emb_width, 1, 1, 0)
 
     def forward(self, x):
         x = self.model(x)
+        x = self.output_proj(x)
         return x.permute(0, 2, 1)

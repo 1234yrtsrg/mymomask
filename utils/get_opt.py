@@ -3,6 +3,7 @@ from argparse import Namespace
 import re
 from os.path import join as pjoin
 from utils.word_vectorizer import POS_enumerator
+from utils.dataset_paths import configure_dataset_paths
 
 
 def is_float(numStr):
@@ -54,31 +55,22 @@ def get_opt(opt_path, device, **kwargs):
     opt.save_root = pjoin(opt.checkpoints_dir, opt.dataset_name, opt.name)
     opt.model_dir = pjoin(opt.save_root, 'model')
     opt.meta_dir = pjoin(opt.save_root, 'meta')
-
-    if opt.dataset_name == 't2m':
-        opt.data_root = './dataset/HumanML3D/'
-        opt.motion_dir = pjoin(opt.data_root, 'new_joint_vecs')
-        opt.text_dir = pjoin(opt.data_root, 'texts')
-        opt.joints_num = 22
-        opt.dim_pose = 263
+    opt = configure_dataset_paths(opt)
+    if not hasattr(opt, 'input_width'):
+        opt.input_width = 61
+    if not hasattr(opt, 'output_width'):
+        opt.output_width = opt.input_width
+    opt.dim_pose = opt.input_width
+    if not hasattr(opt, 'max_motion_length'):
         opt.max_motion_length = 196
-        opt.max_motion_frame = 196
-        opt.max_motion_token = 55
-    elif opt.dataset_name == 'kit':
-        opt.data_root = './dataset/KIT-ML/'
-        opt.motion_dir = pjoin(opt.data_root, 'new_joint_vecs')
-        opt.text_dir = pjoin(opt.data_root, 'texts')
-        opt.joints_num = 21
-        opt.dim_pose = 251
-        opt.max_motion_length = 196
-        opt.max_motion_frame = 196
-        opt.max_motion_token = 55
-    else:
-        raise KeyError('Dataset not recognized')
+    if not hasattr(opt, 'min_motion_length'):
+        opt.min_motion_length = 16
+    opt.max_motion_frame = opt.max_motion_length
+    opt.max_motion_token = opt.max_motion_length // 4 + 6
     if not hasattr(opt, 'unit_length'):
         opt.unit_length = 4
     opt.dim_word = 300
-    opt.num_classes = 200 // opt.unit_length
+    opt.num_classes = opt.max_motion_length // opt.unit_length
     opt.dim_pos_ohot = len(POS_enumerator)
     opt.is_train = False
     opt.is_continue = False
