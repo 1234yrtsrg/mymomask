@@ -2,14 +2,27 @@ import os
 from os.path import join as pjoin
 
 
+LEGACY_MOTION_DIR_DATASETS = {'blendshape', 't2m', 'kit'}
+
+
 def default_data_root(dataset_name):
     return pjoin('.', 'dataset', dataset_name)
 
 
 def default_motion_dir(dataset_name, data_root):
-    if dataset_name == 'xx':
-        return pjoin(data_root, 'data')
-    return pjoin(data_root, 'motions')
+    data_dir = pjoin(data_root, 'data')
+    motions_dir = pjoin(data_root, 'motions')
+
+    if dataset_name in LEGACY_MOTION_DIR_DATASETS:
+        return motions_dir
+
+    if os.path.exists(data_dir):
+        return data_dir
+    if os.path.exists(motions_dir):
+        return motions_dir
+
+    # For custom datasets, default to the newer `data/` layout.
+    return data_dir
 
 
 def default_text_dir(dataset_name, data_root):
