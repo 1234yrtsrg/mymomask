@@ -77,7 +77,7 @@ def train_worker(rank, opt):
         val_dataset = BlendshapeDataset(opt, mean, std, val_split_file)
 
         train_loader = build_dataloader(train_dataset, opt, shuffle=True, drop_last=True, pin_memory=True)
-        val_loader = build_dataloader(val_dataset, opt, shuffle=False, drop_last=True, pin_memory=True)
+        val_loader = build_dataloader(val_dataset, opt, shuffle=False, drop_last=False, pin_memory=True)
 
         trainer.train(train_loader, val_loader)
     finally:
