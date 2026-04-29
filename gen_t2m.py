@@ -210,9 +210,9 @@ if __name__ == '__main__':
     assert res_opt.vq_name == model_opt.vq_name
 
     t2m_transformer = load_trans_model(model_opt, opt.device)
-    t2m_transformer.eval()
-    vq_model.eval()
-    res_model.eval()
+    vq_model = vq_model.to(opt.device).eval()
+    t2m_transformer = t2m_transformer.to(opt.device).eval()
+    res_model = res_model.to(opt.device).eval()
 
     model_opt = configure_dataset_paths(model_opt)
 
