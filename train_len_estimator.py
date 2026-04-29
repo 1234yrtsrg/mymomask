@@ -79,8 +79,9 @@ def main():
     train_split_file = resolve_split_file(opt.data_root, 'train')
     val_split_file = resolve_split_file(opt.data_root, 'val', fallback_splits=['test'])
 
-    # The estimator only needs captions and aligned motion lengths.
-    opt.pad_to_max_length = False
+    # The estimator only uses captions and motion lengths, but the dataloader
+    # still needs tensors in a uniform shape so the default collate can stack them.
+    opt.pad_to_max_length = True
     train_dataset = Text2BlendshapeDataset(opt, mean=None, std=None, split_file=train_split_file)
     val_dataset = Text2BlendshapeDataset(opt, mean=None, std=None, split_file=val_split_file)
 
