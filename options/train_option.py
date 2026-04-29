@@ -36,7 +36,7 @@ class TrainT2MOptions(BaseOptions):
 class TrainLenEstOptions():
     def __init__(self):
         self.parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        self.parser.add_argument('--name', type=str, default="test", help='Name of this trial')
+        self.parser.add_argument('--name', type=str, default="length_estimator", help='Name of this trial')
         self.parser.add_argument("--gpu_id", type=int, default=-1, help='GPU id')
 
         self.parser.add_argument('--dataset_name', type=str, default='blendshape', help='Dataset identifier')
@@ -46,13 +46,17 @@ class TrainLenEstOptions():
         self.parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
 
         self.parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
+        self.parser.add_argument("--num_workers", type=int, default=0, help='Number of dataloader workers')
 
         self.parser.add_argument("--unit_length", type=int, default=4, help="Temporal downsampling ratio")
+        self.parser.add_argument("--max_motion_length", type=int, default=196, help="Max sequence length in frames")
+        self.parser.add_argument("--min_motion_length", type=int, default=16, help="Min sequence length in frames")
         self.parser.add_argument("--max_text_len", type=int, default=20, help="Maximum number of text tokens before adding special tokens")
 
         self.parser.add_argument('--max_epoch', type=int, default=300, help='Training iterations')
 
         self.parser.add_argument('--lr', type=float, default=1e-4, help='Layers of GRU')
+        self.parser.add_argument("--seed", default=3407, type=int, help="Seed")
 
         self.parser.add_argument('--is_continue', action="store_true", help='Training iterations')
 

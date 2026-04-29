@@ -225,7 +225,8 @@ class LengthEstTrainer(object):
         checkpoints = torch.load(model_dir, map_location=self.device)
         self.estimator.load_state_dict(checkpoints['estimator'])
         # self.opt_estimator.load_state_dict(checkpoints['opt_estimator'])
-        return checkpoints['epoch'], checkpoints['iter']
+        total_iter = checkpoints.get('iter', checkpoints.get('niter', 0))
+        return checkpoints['epoch'], total_iter
 
     def save(self, model_dir, epoch, niter):
         state = {

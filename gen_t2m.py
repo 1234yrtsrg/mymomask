@@ -115,11 +115,13 @@ def load_res_model(res_opt, vq_opt, device, preferred_files=None):
 
 
 def load_len_estimator(opt):
-    model = LengthEstimator(512, 50)
-    ckpt = torch.load(
-        pjoin(opt.checkpoints_dir, opt.dataset_name, 'length_estimator', 'model', 'finest.tar'),
-        map_location=opt.device,
+    num_length_classes = opt.max_motion_length // opt.unit_length + 1
+    model = LengthEstimator(512, num_length_classes)
+    ckpt_path = resolve_checkpoint(
+        pjoin(opt.checkpoints_dir, opt.dataset_name, 'length_estimator', 'model'),
+        ['finest.tar', 'latest.tar'],
     )
+    ckpt = torch.load(ckpt_path, map_location=opt.device)
     model.load_state_dict(ckpt['estimator'])
     print(f'Loading Length Estimator from epoch {ckpt["epoch"]}!')
     return model.to(opt.device)
@@ -183,12 +185,9 @@ if __name__ == '__main__':
     assert res_opt.vq_name == model_opt.vq_name
 
     t2m_transformer = load_trans_model(model_opt, opt.device)
-    length_estimator = load_len_estimator(model_opt)
-
     t2m_transformer.eval()
     vq_model.eval()
     res_model.eval()
-    length_estimator.eval()
 
     model_opt = configure_dataset_paths(model_opt)
 
@@ -202,6 +201,8 @@ if __name__ == '__main__':
 
     if estimate_length:
         print("No output length provided, estimating sequence length from text.")
+        length_estimator = load_len_estimator(model_opt)
+        length_estimator.eval()
         text_embedding = t2m_transformer.encode_text(captions)
         pred_dis = length_estimator(text_embedding)
         probs = F.softmax(pred_dis, dim=-1)
