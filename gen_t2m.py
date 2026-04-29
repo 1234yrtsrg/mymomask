@@ -24,6 +24,27 @@ def resolve_checkpoint(model_dir, preferred_files):
     raise FileNotFoundError(f'No checkpoint found in {model_dir}. Tried: {preferred_files}')
 
 
+def load_checkpoint_with_fallback(model_dir, preferred_files, map_location):
+    load_errors = []
+    for filename in preferred_files:
+        ckpt_path = pjoin(model_dir, filename)
+        if not os.path.exists(ckpt_path):
+            continue
+        try:
+            ckpt = torch.load(ckpt_path, map_location=map_location)
+            return ckpt, ckpt_path
+        except Exception as exc:
+            load_errors.append(f'{ckpt_path}: {exc}')
+
+    if load_errors:
+        joined_errors = '\n'.join(load_errors)
+        raise RuntimeError(
+            f'Found checkpoint files in {model_dir}, but none could be loaded.\n{joined_errors}'
+        )
+
+    raise FileNotFoundError(f'No checkpoint found in {model_dir}. Tried: {preferred_files}')
+
+
 def load_vq_model(vq_opt, preferred_files=None):
     input_width = getattr(vq_opt, 'input_width', 61)
     vq_model = RVQVAE(
@@ -42,11 +63,12 @@ def load_vq_model(vq_opt, preferred_files=None):
     )
     if preferred_files is None:
         preferred_files = ['finest.tar', 'latest.tar']
-    ckpt_path = resolve_checkpoint(
-        pjoin(vq_opt.checkpoints_dir, vq_opt.dataset_name, vq_opt.name, 'model'),
+    model_dir = pjoin(vq_opt.checkpoints_dir, vq_opt.dataset_name, vq_opt.name, 'model')
+    ckpt, ckpt_path = load_checkpoint_with_fallback(
+        model_dir,
         preferred_files,
+        map_location='cpu',
     )
-    ckpt = torch.load(ckpt_path, map_location='cpu')
     model_key = 'vq_model' if 'vq_model' in ckpt else 'net'
     vq_model.load_state_dict(ckpt[model_key])
     print(f'Loading VQ Model {vq_opt.name} Completed!')
@@ -69,16 +91,17 @@ def load_trans_model(model_opt, device, preferred_files=None):
     )
     if preferred_files is None:
         preferred_files = ['net_best_acc.tar', 'net_best_loss.tar', 'latest.tar']
-    ckpt_path = resolve_checkpoint(
-        pjoin(model_opt.checkpoints_dir, model_opt.dataset_name, model_opt.name, 'model'),
+    model_dir = pjoin(model_opt.checkpoints_dir, model_opt.dataset_name, model_opt.name, 'model')
+    ckpt, ckpt_path = load_checkpoint_with_fallback(
+        model_dir,
         preferred_files,
+        map_location='cpu',
     )
-    ckpt = torch.load(ckpt_path, map_location='cpu')
     model_key = 't2m_transformer' if 't2m_transformer' in ckpt else 'trans'
     missing_keys, unexpected_keys = t2m_transformer.load_state_dict(ckpt[model_key], strict=False)
     assert len(unexpected_keys) == 0
     assert all([k.startswith('clip_model.') for k in missing_keys])
-    print(f'Loading Transformer {model_opt.name} from epoch {ckpt["ep"]}!')
+    print(f'Loading Transformer {model_opt.name} from {os.path.basename(ckpt_path)} epoch {ckpt["ep"]}!')
     return t2m_transformer.to(device)
 
 
@@ -102,28 +125,30 @@ def load_res_model(res_opt, vq_opt, device, preferred_files=None):
     )
     if preferred_files is None:
         preferred_files = ['net_best_loss.tar', 'latest.tar']
-    ckpt_path = resolve_checkpoint(
-        pjoin(res_opt.checkpoints_dir, res_opt.dataset_name, res_opt.name, 'model'),
+    model_dir = pjoin(res_opt.checkpoints_dir, res_opt.dataset_name, res_opt.name, 'model')
+    ckpt, ckpt_path = load_checkpoint_with_fallback(
+        model_dir,
         preferred_files,
+        map_location=device,
     )
-    ckpt = torch.load(ckpt_path, map_location=device)
     missing_keys, unexpected_keys = res_transformer.load_state_dict(ckpt['res_transformer'], strict=False)
     assert len(unexpected_keys) == 0
     assert all([k.startswith('clip_model.') for k in missing_keys])
-    print(f'Loading Residual Transformer {res_opt.name} from epoch {ckpt["ep"]}!')
+    print(f'Loading Residual Transformer {res_opt.name} from {os.path.basename(ckpt_path)} epoch {ckpt["ep"]}!')
     return res_transformer.to(device)
 
 
 def load_len_estimator(opt):
     num_length_classes = opt.max_motion_length // opt.unit_length + 1
     model = LengthEstimator(512, num_length_classes)
-    ckpt_path = resolve_checkpoint(
-        pjoin(opt.checkpoints_dir, opt.dataset_name, 'length_estimator', 'model'),
+    model_dir = pjoin(opt.checkpoints_dir, opt.dataset_name, 'length_estimator', 'model')
+    ckpt, ckpt_path = load_checkpoint_with_fallback(
+        model_dir,
         ['finest.tar', 'latest.tar'],
+        map_location=opt.device,
     )
-    ckpt = torch.load(ckpt_path, map_location=opt.device)
     model.load_state_dict(ckpt['estimator'])
-    print(f'Loading Length Estimator from epoch {ckpt["epoch"]}!')
+    print(f'Loading Length Estimator from {os.path.basename(ckpt_path)} epoch {ckpt["epoch"]}!')
     return model.to(opt.device)
 
 

@@ -4,6 +4,7 @@ import torch.optim as optim
 # import tensorflow as tf
 from torch.utils.tensorboard import SummaryWriter
 from collections import OrderedDict
+from utils.checkpoint import atomic_torch_save
 from utils.distributed import is_main_process, reduce_mean, set_epoch_for_sampler, unwrap_model
 from utils.utils import *
 from os.path import join as pjoin
@@ -82,7 +83,7 @@ class MaskTransformerTrainer:
             'ep': ep,
             'total_it': total_it,
         }
-        torch.save(state, file_name)
+        atomic_torch_save(state, file_name)
 
     def resume(self, model_dir):
         checkpoint = torch.load(model_dir, map_location=self.device)
@@ -250,7 +251,7 @@ class ResidualTransformerTrainer:
             'ep': ep,
             'total_it': total_it,
         }
-        torch.save(state, file_name)
+        atomic_torch_save(state, file_name)
 
     def resume(self, model_dir):
         checkpoint = torch.load(model_dir, map_location=self.device)

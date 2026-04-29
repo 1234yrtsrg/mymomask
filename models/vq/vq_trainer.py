@@ -8,6 +8,7 @@ import torch.optim as optim
 from torch.nn.utils import clip_grad_norm_
 from torch.utils.tensorboard import SummaryWriter
 
+from utils.checkpoint import atomic_torch_save
 from utils.distributed import is_main_process, reduce_mean, set_epoch_for_sampler, unwrap_model
 from utils.utils import print_current_loss
 
@@ -102,7 +103,7 @@ class RVQTokenizerTrainer:
             'ep': ep,
             'total_it': total_it,
         }
-        torch.save(state, file_name)
+        atomic_torch_save(state, file_name)
 
     def resume(self, model_dir):
         checkpoint = torch.load(model_dir, map_location=self.device)
@@ -235,7 +236,7 @@ class LengthEstTrainer(object):
             'epoch': epoch,
             'niter': niter,
         }
-        torch.save(state, model_dir)
+        atomic_torch_save(state, model_dir)
 
     @staticmethod
     def zero_grad(opt_list):
